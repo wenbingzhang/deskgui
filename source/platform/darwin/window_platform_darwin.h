@@ -21,9 +21,7 @@
  */
 @interface WindowDelegate : NSObject <NSWindowDelegate>
 @property(nonatomic, assign) deskgui::Window::Impl* window;
-@property(nonatomic, assign) deskgui::AppHandler* appHandler;
-- (instancetype)initWithWindow:(deskgui::Window::Impl*)window
-                    appHandler:(deskgui::AppHandler*)appHandler;
+- (instancetype)initWithWindow:(deskgui::Window::Impl*)window;
 @end
 
 /**
@@ -36,11 +34,8 @@
 @interface WindowObserver : NSObject
 @property(nonatomic, assign) deskgui::Window::Impl* window;
 @property(nonatomic, assign) NSWindow* nativeWindow;
-@property(nonatomic, assign) deskgui::AppHandler* appHandler;
 
-- (instancetype)initWithWindow:(deskgui::Window::Impl*)window
-                  nativeWindow:(NSWindow*)nativeWindow
-                    appHandler:(deskgui::AppHandler*)appHandler;
+- (instancetype)initWithWindow:(deskgui::Window::Impl*)window nativeWindow:(NSWindow*)nativeWindow;
 - (void)stopObserving;
 @end
 

@@ -11,11 +11,10 @@ using namespace deskgui;
 
 @implementation WindowDelegate
 
-- (instancetype)initWithWindow:(Window::Impl*)window appHandler:(AppHandler*)appHandler {
+- (instancetype)initWithWindow:(Window::Impl*)window {
   self = [super init];
   if (self) {
     _window = window;
-    _appHandler = appHandler;
   }
   return self;
 }
@@ -30,7 +29,7 @@ using namespace deskgui;
   if (closeEvent.isCancelled()) {
     return FALSE;
   }
-  _appHandler->notifyWindowClosedFromUI(_window->getName());
+  _window->application()->notifyWindowClosedFromUI(_window->getName());
   return YES;
 }
 
@@ -46,14 +45,11 @@ using namespace deskgui;
 
 @implementation WindowObserver
 
-- (instancetype)initWithWindow:(Window::Impl*)window
-                  nativeWindow:(NSWindow*)nativeWindow
-                    appHandler:(AppHandler*)appHandler {
+- (instancetype)initWithWindow:(Window::Impl*)window nativeWindow:(NSWindow*)nativeWindow {
   self = [super init];
   if (self) {
     _window = window;
     _nativeWindow = nativeWindow;
-    _appHandler = appHandler;
 
     // Register for notifications
     [[NSNotificationCenter defaultCenter] addObserver:self

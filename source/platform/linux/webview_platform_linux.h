@@ -20,10 +20,11 @@ namespace deskgui {
     GtkFixed* container;
 
     static gboolean onNavigationRequest(WebKitWebView* webview, WebKitPolicyDecision* decision,
-                                        WebKitPolicyDecisionType decisionType, Webview* self);
-    static void onLoadChanged(WebKitWebView* webview, WebKitLoadEvent loadEvent, Webview* self);
+                                        WebKitPolicyDecisionType decisionType, Webview::Impl* impl);
+    static void onLoadChanged(WebKitWebView* webview, WebKitLoadEvent loadEvent,
+                              Webview::Impl* impl);
     static void onScriptMessageReceived(WebKitUserContentManager* manager,
-                                        WebKitJavascriptResult* message, Webview* self);
+                                        WebKitJavascriptResult* message, Webview::Impl* impl);
     static void onCustomSchemeRequest(WebKitURISchemeRequest* request, gpointer userData);
   };
 }  // namespace deskgui

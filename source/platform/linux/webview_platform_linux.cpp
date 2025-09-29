@@ -12,8 +12,9 @@ namespace deskgui {
   using Platform = Webview::Impl::Platform;
 
   gboolean Platform::onNavigationRequest(WebKitWebView* webview, WebKitPolicyDecision* decision,
-                                         WebKitPolicyDecisionType decisionType, Webview* self) {
-    if (!self) return FALSE;
+                                         WebKitPolicyDecisionType decisionType,
+                                         Webview::Impl* impl) {
+    if (!impl) return FALSE;
 
     switch (decisionType) {
       case WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION: {
@@ -25,7 +26,7 @@ namespace deskgui {
         const gchar* uri = webkit_uri_request_get_uri(uriRequest);
 
         event::WebviewNavigationStarting event{std::string(uri)};
-        self->emit(event);
+        impl->events().emit(event);
 
         if (event.isCancelled()) {
           return TRUE;
@@ -36,41 +37,42 @@ namespace deskgui {
     return FALSE;  // stop further signal emission
   }
 
-  void Platform::onLoadChanged(WebKitWebView* webview, WebKitLoadEvent loadEvent, Webview* self) {
-    if (!self || !webview) return;
+  void Platform::onLoadChanged(WebKitWebView* webview, WebKitLoadEvent loadEvent,
+                               Webview::Impl* impl) {
+    if (!impl || !webview) return;
 
     if (loadEvent == WEBKIT_LOAD_COMMITTED) {
       const gchar* uri = webkit_web_view_get_uri(webview);
-      self->emit(event::WebviewSourceChanged(std::string(uri)));
+      impl->events().emit(event::WebviewSourceChanged(std::string(uri)));
     } else if (loadEvent == WEBKIT_LOAD_FINISHED) {
-      self->emit(event::WebviewContentLoaded(true));
+      impl->events().emit(event::WebviewContentLoaded(true));
     }
   }
 
   void Platform::onScriptMessageReceived([[maybe_unused]] WebKitUserContentManager* manager,
-                                         WebKitJavascriptResult* message, Webview* self) {
-    if (!self) return;
+                                         WebKitJavascriptResult* message, Webview::Impl* impl) {
+    if (!impl) return;
 
     char* s;
     JSCValue* value = webkit_javascript_result_get_js_value(message);
     s = jsc_value_to_string(value);
-    self->onMessage(s);
+    impl->onMessage(s);
     g_free(s);
   }
 
   void Platform::onCustomSchemeRequest(WebKitURISchemeRequest* request, gpointer userData) {
-    Webview* self = static_cast<Webview*>(userData);
+    Webview::Impl* impl = static_cast<Webview::Impl*>(userData);
 
-    if (!self || !request) return;
+    if (!impl || !request) return;
 
     const gchar* uri = webkit_uri_scheme_request_get_uri(request);
 
-    auto it = std::find_if(self->resources_.begin(), self->resources_.end(),
+    auto it = std::find_if(impl->resources_.begin(), impl->resources_.end(),
                            [&](const Resource& resource) {
                              return (Webview::Impl::kOrigin + resource.scheme) == std::string(uri);
                            });
 
-    if (it != self->resources_.end()) {
+    if (it != impl->resources_.end()) {
       GBytes* bytes = g_bytes_new(it->content.data(), it->content.size());
 
       if (!bytes) {

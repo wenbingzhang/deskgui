@@ -28,8 +28,7 @@ Impl::Impl(const std::string& name, AppHandler* appHandler, void* nativeWindow)
     [platform_->window center];
     [platform_->window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
     platform_->view = [platform_->window contentView];
-    WindowDelegate* windowDelegate =
-        [[WindowDelegate alloc] initWithWindow:this appHandler:appHandler_];
+    WindowDelegate* windowDelegate = [[WindowDelegate alloc] initWithWindow:this];
     [platform_->window setDelegate:windowDelegate];
   } else {
     isExternalWindow_ = true;
@@ -43,9 +42,8 @@ Impl::Impl(const std::string& name, AppHandler* appHandler, void* nativeWindow)
       platform_->view = view;
     }
 
-    platform_->observer = [[WindowObserver alloc] initWithWindow:this
-                                                    nativeWindow:platform_->window
-                                                      appHandler:appHandler_];
+    platform_->observer =
+        [[WindowObserver alloc] initWithWindow:this nativeWindow:platform_->window];
   }
   if (!platform_->window && !platform_->view) {
     NSError* error = [NSError errorWithDomain:NSOSStatusErrorDomain code:-1 userInfo:nil];
