@@ -31,6 +31,8 @@ namespace deskgui {
     inline static const std::string kOrigin = "webview://localhost/";
     inline static const std::wstring kWOrigin = L"webview://localhost/";
 
+    [[nodiscard]] inline std::string getName() const { return name_; }
+    
     // Settings
     void enableDevTools(bool state);
     void enableContextMenu(bool state);

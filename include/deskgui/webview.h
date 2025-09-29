@@ -26,7 +26,7 @@ namespace deskgui {
    * interaction between JavaScript and native code by adding and removing callback functions.
    */
   class Webview {
-    class Impl;
+  private:
     friend class Window;
 
     /**
@@ -44,12 +44,20 @@ namespace deskgui {
             const WebviewOptions& options);
 
   public:
+    class Impl;
+
     /**
      * @brief Destroys the Webview object.
      */
     ~Webview();
 
-    // Settings
+    /**
+     * @brief Get the name associated with this Webview.
+     *
+     *
+     * @return A constant reference to the name of the webview.
+     */
+    [[nodiscard]] std::string getName() const;
 
     /**
      * @brief Enables or disables the developer tools.

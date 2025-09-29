@@ -26,10 +26,9 @@ namespace deskgui {
    *
    */
   class App : public AppHandler {
-  private:
+  public:
     class Impl;
 
-  public:
     explicit App(const std::string& name = "deskgui");
     ~App() final;
 

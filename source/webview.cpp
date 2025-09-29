@@ -20,6 +20,8 @@ Webview::Webview(const std::string& name, AppHandler* appHandler, void* window,
 
 Webview::~Webview() = default;
 
+std::string Webview::getName() const { return utils::dispatch<&Impl::getName>(impl_); }
+
 void Webview::Impl::addCallback(const std::string& key, MessageCallback callback) {
   callbacks_.try_emplace(key, callback);
 }

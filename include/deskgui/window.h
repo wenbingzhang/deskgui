@@ -25,7 +25,6 @@ namespace deskgui {
    */
   class Window {
   private:
-    class Impl;
     friend class App;
     /**
      * @brief Constructs a Window object.
@@ -43,6 +42,8 @@ namespace deskgui {
     explicit Window(const std::string& name, AppHandler* appHandler, void* nativeWindow = nullptr);
 
   public:
+    class Impl;
+
     /**
      * @brief Destroys the Window object.
      */

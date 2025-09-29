@@ -37,7 +37,7 @@ namespace deskgui {
     void destroyWebview(const std::string& name);
     [[nodiscard]] Webview* getWebview(const std::string& name) const;
 
-    [[nodiscard]] inline const std::string& getName() const { return name_; }
+    [[nodiscard]] inline std::string getName() const { return name_; }
 
     void setTitle(const std::string& title);
     [[nodiscard]] std::string getTitle() const;
