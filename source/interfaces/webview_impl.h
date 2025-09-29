@@ -12,13 +12,12 @@
 
 #include <unordered_map>
 
-
 namespace deskgui {
 
   class Webview::Impl {
+  public:
     class Platform;
 
-  public:
     explicit Impl(const std::string& name, AppHandler* appHandler, void* window,
                   const WebviewOptions& options);
     ~Impl();
@@ -32,7 +31,7 @@ namespace deskgui {
     inline static const std::wstring kWOrigin = L"webview://localhost/";
 
     [[nodiscard]] inline std::string getName() const { return name_; }
-    
+
     // Settings
     void enableDevTools(bool state);
     void enableContextMenu(bool state);

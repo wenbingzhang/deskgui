@@ -29,7 +29,7 @@ using namespace deskgui;
   if (closeEvent.isCancelled()) {
     return FALSE;
   }
-  _window->application()->notifyWindowClosedFromUI(_window->getName());
+  _window->appHandler_->notifyWindowClosedFromUI(_window->getName());
   return YES;
 }
 
