@@ -14,7 +14,7 @@ using namespace deskgui;
 using Impl = Window::Impl;
 
 Impl::Impl(const std::string& name, AppHandler* appHandler, void* nativeWindow)
-    : pImpl_{std::make_unique<Impl::Platform>()}, name_(name), appHandler_(appHandler) {
+    : platform_(std::make_unique<Impl::Platform>()), name_(name), appHandler_(appHandler) {
   if (nativeWindow != nullptr) {
     isExternalWindow_ = true;
     platform_->window = GTK_WINDOW(nativeWindow);

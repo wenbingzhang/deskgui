@@ -113,6 +113,8 @@ void Window::center() { utils::dispatch<&Impl::center>(impl_); }
 
 void Window::enable(bool state) { utils::dispatch<&Impl::enable>(impl_, state); }
 
+void Window::close() { utils::dispatch<&Impl::close>(impl_); }
+
 // Background methods
 void Window::setBackgroundColor(int red, int green, int blue) {
   utils::dispatch<&Impl::setBackgroundColor>(impl_, red, green, blue);

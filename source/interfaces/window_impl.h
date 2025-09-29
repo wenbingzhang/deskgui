@@ -64,6 +64,7 @@ namespace deskgui {
     void show();
     void center();
     void enable(bool state);
+    inline void close() { appHandler_->destroyWindow(getName()); }
 
     void setBackgroundColor(int red, int green, int blue);
 
@@ -76,6 +77,7 @@ namespace deskgui {
     [[nodiscard]] inline AppHandler* application() const { return appHandler_; }
     [[nodiscard]] inline EventBus& events() { return events_; }
     [[nodiscard]] inline Platform* platform() { return platform_.get(); }
+
 
   private:
     std::unique_ptr<Platform> platform_{nullptr};

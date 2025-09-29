@@ -239,6 +239,11 @@ namespace deskgui {
     void enable(bool state);
 
     /**
+     * @brief Closes the window.
+     */
+    void close();
+
+    /**
      * @brief Sets the background color of the window.
      *
      * This method sets the background color of the window to the specified RGB color.

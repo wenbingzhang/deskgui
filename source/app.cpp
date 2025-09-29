@@ -83,10 +83,3 @@ void App::terminate() {
 bool App::isMainThread() const { return impl_->isMainThread(); }
 
 void App::dispatch(DispatchTask&& task) const { impl_->dispatch(std::move(task)); }
-
-void App::notifyWindowClosedFromUI(const std::string& name) {
-  if (!isMainThread()) {
-    return dispatchOnMainThread([this, name] { notifyWindowClosedFromUI(name); });
-  }
-  destroyWindow(name);
-}

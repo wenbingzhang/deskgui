@@ -86,7 +86,7 @@ LRESULT CALLBACK Platform::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
       if (closeEvent.isCancelled()) {
         return 0;
       }
-      window->appHandler_->notifyWindowClosedFromUI(window->getName());
+      window->close();
     } else {
       if (processWindowMessage(window, hwnd, uMsg, wParam, lParam)) return 0;
     }

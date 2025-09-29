@@ -56,7 +56,7 @@ namespace deskgui {
      *
      * @param name The name of the window to be destroyed.
      */
-    void destroyWindow(const std::string& name);
+    void destroyWindow(const std::string& name) override;
 
     /**
      * Get the window with the specified name.
@@ -106,21 +106,6 @@ namespace deskgui {
 
   private:
     std::unique_ptr<Impl> impl_{nullptr};
-
-    /**
-     * @brief Override method for notifying the application that a window with the specified
-     * name was closed from the user interface.
-     *
-     * The `notifyWindowClosedFromUI` method is called when a window with the given name is
-     * closed by the user through the user interface.
-     *
-     * The method destroys the window instance associated with the given
-     * name, releasing all resources used by the window, including its webviews. It is essential
-     * to ensure proper cleanup and resource management.
-     *
-     * @param name The name or identifier of the closed window.
-     */
-    void notifyWindowClosedFromUI(const std::string& name) override;
 
     /**
      * @brief Posts a task to the main thread's message loop

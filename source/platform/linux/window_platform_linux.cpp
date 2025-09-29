@@ -20,7 +20,7 @@ gboolean Platform::onDelete(GtkWidget* widget, [[maybe_unused]] GdkEvent* event,
     if (closeEvent.isCancelled()) {
       return TRUE;
     }
-    window->appHandler_->notifyWindowClosedFromUI(window->getName());
+    window->close();
   }
 
   return FALSE;

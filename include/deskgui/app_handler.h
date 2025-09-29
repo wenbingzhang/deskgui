@@ -16,15 +16,19 @@
 #include <type_traits>
 
 namespace deskgui {
-  class Window;
   using DispatchTask = std::function<void()>;
 
   class AppHandler {
-    friend class Window;
-
   public:
     AppHandler() = default;
     virtual ~AppHandler() = default;
+
+    /**
+     * @brief Destroys the window with the specified name.
+     *
+     * @param name The name or identifier of the window being destroyed.
+     */
+    virtual void destroyWindow(const std::string& name) = 0;
 
     /**
      * @brief Checks if the current thread is the main thread.
@@ -65,13 +69,6 @@ namespace deskgui {
     };
 
   protected:
-    /**
-     * @brief Notifies the `AppHandler` about a window being closed from the user interface.
-     *
-     * @param name The name or identifier of the window being closed.
-     */
-    virtual void notifyWindowClosedFromUI(const std::string& name) = 0;
-
     /**
      * @brief Posts a task to the main thread's message loop
      *
