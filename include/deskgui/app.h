@@ -4,51 +4,33 @@
  * Copyright (c) 2023 deskgui
  * MIT License
  */
+
 #pragma once
 
 #include <deskgui/app_handler.h>
 #include <deskgui/window.h>
 
-#include <atomic>
-#include <iostream>
-#include <unordered_map>
+#include <functional>
+#include <future>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
 
 namespace deskgui {
-
   /**
    * @class App
    * @brief The main application class responsible for running the deskgui application.
-   * 
+   *
    * @param name The name of the application. Defaults to "deskgui" if not provided.
    *
    */
-  class App : private AppHandler {
+  class App : public AppHandler {
   public:
+    class Impl;
+
     explicit App(const std::string& name = "deskgui");
-    ~App() final = default;
-
-    /**
-     * @brief Starts the main event loop of the application.
-     *
-     * This method enters the main event loop and continues running until the application is
-     * terminated. It processes messages from windows and tasks posted to the main thread.
-     */
-    void run();
-
-    /**
-     * @brief Checks if the application is currently running.
-     *
-     * @return True if the application is currently running, false otherwise.
-     */
-    [[nodiscard]] inline bool isRunning() const { return isRunning_.load(); }
-
-    /**
-     * @brief Terminates the application's main event loop and destroys all windows.
-     *
-     * This method terminates the application's main event loop and cleans up any resources
-     * associated with it. All windows created by the application will be destroyed.
-     */
-    void terminate();
+    ~App() final;
 
     /**
      * Create a new window with the specified name and position it with the given rect.
@@ -74,7 +56,7 @@ namespace deskgui {
      *
      * @param name The name of the window to be destroyed.
      */
-    void destroyWindow(const std::string& name);
+    void destroyWindow(const std::string& name) override;
 
     /**
      * Get the window with the specified name.
@@ -86,31 +68,53 @@ namespace deskgui {
     Window* getWindow(const std::string& name) const;
 
     /**
-     * @brief Posts a task to be executed on the main thread.
+     * @brief Gets the name of the application.
      *
-     * This method schedules a task to be executed on the main thread.
-     * This is useful for ensuring thread-safe operations or interactions with the
-     * native window system that must occur on the main thread.
-     *
-     * @param task The task function to be posted for execution on the main thread.
+     * @return The name of the application.
      */
-    void executeOnMainThread(std::function<void()> task);
+    [[nodiscard]] std::string_view getName() const;
+
+    /**
+     * @brief Starts the main event loop of the application.
+     *
+     * This method enters the main event loop and continues running until the application is
+     * terminated. It processes messages from windows and tasks posted to the main thread.
+     */
+    void run();
+
+    /**
+     * @brief Terminates the application's main event loop and destroys all windows.
+     *
+     * This method terminates the application's main event loop and cleans up any resources
+     * associated with it. All windows created by the application will be destroyed.
+     */
+    void terminate();
+
+    /**
+     * @brief Checks if the application is currently running.
+     *
+     * @return True if the application is currently running, false otherwise.
+     */
+    [[nodiscard]] bool isRunning() const;
+
+    /**
+     * @brief Checks if the current thread is the main thread.
+     *
+     * @return True if the current thread is the main thread, false otherwise.
+     */
+    [[nodiscard]] bool isMainThread() const override;
 
   private:
+    std::unique_ptr<Impl> impl_{nullptr};
+
     /**
-     * @brief Override method for notifying the application that a window with the specified
-     * name was closed from the user interface.
+     * @brief Posts a task to the main thread's message loop
      *
-     * The `notifyWindowClosedFromUI` method is called when a window with the given name is
-     * closed by the user through the user interface.
-     *
-     * The method destroys the window instance associated with the given
-     * name, releasing all resources used by the window, including its webviews. It is essential
-     * to ensure proper cleanup and resource management.
-     *
-     * @param name The name or identifier of the closed window.
+     * @tparam Task The type of the task function to be posted.
+     * @param task The task function to be posted.
+     * @return The result of the task function, if applicable.
      */
-    void notifyWindowClosedFromUI(const std::string& name) override;
+    void dispatch(DispatchTask&& task) const override;
 
     /**
      * @brief Gets a pointer to the application handler.
@@ -118,12 +122,6 @@ namespace deskgui {
      * @return A pointer to the application handler.
      */
     inline AppHandler* getHandler() { return this; }
-
-    std::atomic<bool> isRunning_{false};  // Atomic flag to indicate if the application is running.
-
-    // Collection of windows
-    std::unordered_map<std::string, std::unique_ptr<Window>> windows_;
-    mutable std::mutex windowsMutex_;
   };
 
 }  // namespace deskgui

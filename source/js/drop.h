@@ -16,7 +16,7 @@
 #include "js/events.h"
 
 #ifdef WIN32
-#include "utils/strings.h"
+#  include "utils/strings.h"
 #endif
 
 namespace deskgui::js {

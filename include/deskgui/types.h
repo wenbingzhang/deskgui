@@ -27,7 +27,7 @@ namespace deskgui {
       return (lhs.L == rhs.L) && (lhs.T == rhs.T) && (lhs.R == rhs.R) && (lhs.B == rhs.B);
     }
   };
-  
+
   enum class PixelsType {
     kLogical,  // Device-independent pixels.
     kPhysical  // Physical pixels.
@@ -39,7 +39,7 @@ namespace deskgui {
   // Callback function type for receiving messages.
   using MessageCallback = std::function<void(std::string_view)>;
 
-  typedef size_t UniqueId;
+  using UniqueId = size_t;
 
   struct UniqueIdGenerator {
     static UniqueId newId() {

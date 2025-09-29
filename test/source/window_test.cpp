@@ -1,47 +1,59 @@
-#define DOCTEST_WINDOW_TEST
-#define NOMINMAX
-
 #include <deskgui/app.h>
 
+#include <atomic>
+#include <catch2/catch_all.hpp>
+#include <chrono>
+#include <memory>
 #include <thread>
 
-#include "catch2/catch_all.hpp"
+namespace {
 
-deskgui::ViewSize pixelsToDips(deskgui::ViewSize size, float scale) {
-  return {size.first / scale, size.second / scale};
-}
+  inline deskgui::ViewSize toDips(const deskgui::ViewSize& size, float scale) {
+    return {static_cast<std::size_t>(size.first / scale),
+            static_cast<std::size_t>(size.second / scale)};
+  }
 
-TEST_CASE("Window test") {
+  inline deskgui::ViewRect toDips(const deskgui::ViewRect& rect, float scale) {
+    return {static_cast<std::size_t>(rect.L / scale), static_cast<std::size_t>(rect.T / scale),
+            static_cast<std::size_t>(rect.R / scale), static_cast<std::size_t>(rect.B / scale)};
+  }
+
+}  // namespace
+
+TEST_CASE("Window basic functionality") {
   deskgui::App app;
   auto window = app.createWindow("window");
+  REQUIRE(window);  // Ensure window creation succeeded
 
-  SECTION("Get native window") { CHECK(window->getNativeWindow() != nullptr); }
+  const auto scale = window->getMonitorScaleFactor();
+
+  SECTION("Native window handle is valid") { CHECK(window->getNativeWindow() != nullptr); }
 
   SECTION("Set and get title") {
-    std::string expectedTitle = "Window tests";
+    constexpr auto expectedTitle = "Window tests";
     window->setTitle(expectedTitle);
-    CHECK(expectedTitle == window->getTitle());
+    CHECK(window->getTitle() == expectedTitle);
   }
 
   SECTION("Set and get size") {
-    deskgui::ViewSize expectedSize = {600, 600};
+    constexpr deskgui::ViewSize expectedSize{600, 600};
     window->setSize(expectedSize);
-    CHECK(expectedSize == pixelsToDips(window->getSize(), window->getMonitorScaleFactor()));
+    CHECK(toDips(window->getSize(), scale) == expectedSize);
   }
 
   SECTION("Set and get max size") {
-    deskgui::ViewSize expectedSize = {600, 600};
+    constexpr deskgui::ViewSize expectedSize{600, 600};
     window->setMaxSize(expectedSize);
-    CHECK(expectedSize == pixelsToDips(window->getMaxSize(), window->getMonitorScaleFactor()));
+    CHECK(toDips(window->getMaxSize(), scale) == expectedSize);
   }
 
   SECTION("Set and get min size") {
-    deskgui::ViewSize expectedSize = {600, 600};
+    constexpr deskgui::ViewSize expectedSize{600, 600};
     window->setMinSize(expectedSize);
-    CHECK(expectedSize == pixelsToDips(window->getMinSize(), window->getMonitorScaleFactor()));
+    CHECK(toDips(window->getMinSize(), scale) == expectedSize);
   }
 
-  SECTION("Set resizable") {
+  SECTION("Resizable flag") {
     window->setResizable(true);
     CHECK(window->isResizable());
 
@@ -50,20 +62,20 @@ TEST_CASE("Window test") {
   }
 
   SECTION("Set and get window position") {
-    deskgui::ViewRect expectedPosition{200, 100, 500, 600};
-    window->setPosition(expectedPosition);
-    auto position = window->getPosition();
-    auto scale = window->getMonitorScaleFactor();
-    position.L /= scale;
-    position.T /= scale;
-    position.R /= scale;
-    position.B /= scale;
-    CHECK(expectedPosition == position);
+    constexpr deskgui::ViewRect expectedPos{200, 100, 500, 600};
+    window->setPosition(expectedPos);
+
+    const auto actual = toDips(window->getPosition(), scale);
+    INFO("Expected: (" << expectedPos.L << "," << expectedPos.T << "," << expectedPos.R << ","
+                       << expectedPos.B << ")");
+    INFO("Actual: (" << actual.L << "," << actual.T << "," << actual.R << "," << actual.B << ")");
+    CHECK(actual == expectedPos);
   }
 
-  SECTION("Set and get decorated") {
+  SECTION("Decorations flag") {
     window->setDecorations(true);
     CHECK(window->isDecorated());
+
     window->setDecorations(false);
     CHECK_FALSE(window->isDecorated());
   }

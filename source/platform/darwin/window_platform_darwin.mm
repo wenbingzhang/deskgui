@@ -5,39 +5,36 @@
  * MIT License
  */
 
-#include "app_handler_darwin.h"
-#include "window_darwin_impl.h"
-
+#include "window_platform_darwin.h"
 
 using namespace deskgui;
 
 @implementation WindowDelegate
 
-- (instancetype)initWithWindow:(Window*)window appHandler:(AppHandler*)appHandler {
+- (instancetype)initWithWindow:(Window::Impl*)window {
   self = [super init];
   if (self) {
     _window = window;
-    _appHandler = appHandler;
   }
   return self;
 }
 
 - (void)windowDidLoad:(NSNotification*)notification {
-  _window->emit(event::WindowShow{true});
+  _window->events().emit(event::WindowShow{true});
 }
 
 - (BOOL)windowShouldClose:(NSWindow*)sender {
   event::WindowClose closeEvent{};
-  _window->emit(closeEvent);
+  _window->events().emit(closeEvent);
   if (closeEvent.isCancelled()) {
     return FALSE;
   }
-  _appHandler->notifyWindowClosedFromUI(_window->getName());
+  _window->close();
   return YES;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  _window->emit(event::WindowResize{_window->getSize(PixelsType::kPhysical)});
+  _window->events().emit(event::WindowResize{_window->getSize(PixelsType::kPhysical)});
 }
 
 - (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
@@ -48,14 +45,11 @@ using namespace deskgui;
 
 @implementation WindowObserver
 
-- (instancetype)initWithWindow:(Window*)window
-                  nativeWindow:(NSWindow*)nativeWindow
-                    appHandler:(AppHandler*)appHandler {
+- (instancetype)initWithWindow:(Window::Impl*)window nativeWindow:(NSWindow*)nativeWindow {
   self = [super init];
   if (self) {
     _window = window;
     _nativeWindow = nativeWindow;
-    _appHandler = appHandler;
 
     // Register for notifications
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -86,15 +80,15 @@ using namespace deskgui;
 }
 
 - (void)windowDidLoadNotification:(NSNotification*)notification {
-  _window->emit(event::WindowShow{true});
+  _window->events().emit(event::WindowShow{true});
 }
 
 - (void)windowWillCloseNotification:(NSNotification*)notification {
-  _window->emit(event::WindowClose{});
+  _window->events().emit(event::WindowClose{});
 }
 
 - (void)windowDidResizeNotification:(NSNotification*)notification {
-  _window->emit(event::WindowResize{_window->getSize()});
+  _window->events().emit(event::WindowResize{_window->getSize()});
 }
 
 @end

@@ -5,21 +5,22 @@
  * MIT License
  */
 
+#include "webview_platform_darwin.h"
+
 #include "js/drop.h"
-#include "webview_darwin_impl.h"
 
 using namespace deskgui;
 
 // Global constants
-NSString* const deskgui::kSchemeUri = [NSString stringWithUTF8String:Webview::kProtocol];
+NSString* const deskgui::kSchemeUri = [NSString stringWithUTF8String:Webview::Impl::kProtocol];
 NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
 @implementation CustomNavigationDelegate {
-  deskgui::Webview* webview_;
+  deskgui::Webview::Impl* webview_;
   std::vector<deskgui::Resource>* resources_;
 }
 
-- (instancetype)initWithWebview:(deskgui::Webview*)webview
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview
                       resources:(std::vector<deskgui::Resource>*)resources {
   self = [super init];
   if (self) {
@@ -33,8 +34,9 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
       didReceiveScriptMessage:(nonnull WKScriptMessage*)message {
   if ([[message name] isEqualToString:kScriptMessageCallback]) {
     NSDictionary* dict = (NSDictionary*)message.body;
-    NSData* data =
-        [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
+    NSData* data = [NSJSONSerialization dataWithJSONObject:dict
+                                                   options:NSJSONWritingPrettyPrinted
+                                                     error:nil];
     NSString* jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     webview_->onMessage([jsonString UTF8String]);
   }
@@ -50,7 +52,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
                  @"window.addEventListener('contextmenu', (event) => event.preventDefault());"
               completionHandler:nil];
   }
-  webview_->emit(event::WebviewContentLoaded{true});
+  webview_->events().emit(event::WebviewContentLoaded{true});
 }
 
 - (void)webView:(WKWebView*)webView didCommitNavigation:(WKNavigation*)navigation {
@@ -58,7 +60,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
     NSString* urlString = [webView.URL absoluteString];
     const char* urlCString = [urlString UTF8String];
     std::string url = urlCString ? urlCString : "";
-    webview_->emit(event::WebviewSourceChanged{url});
+    webview_->events().emit(event::WebviewSourceChanged{url});
   }
 }
 
@@ -69,7 +71,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
   std::string url = [urlString UTF8String];
 
   event::WebviewNavigationStarting event{url};
-  webview_->emit(event);
+  webview_->events().emit(event);
 
   if (event.isCancelled()) {
     decisionHandler(WKNavigationActionPolicyCancel);
@@ -82,7 +84,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
   if ([urlSchemeTask.request.URL.scheme isEqualToString:kSchemeUri] && resources_ != nullptr) {
     NSString* resourceURL = urlSchemeTask.request.URL.relativeString;
     std::string resourceURLString = [resourceURL UTF8String];
-    std::string resourceScheme = resourceURLString.substr(Webview::kOrigin.size());
+    std::string resourceScheme = resourceURLString.substr(Webview::Impl::kOrigin.size());
 
     size_t secondLastDotPos = resourceScheme.rfind('.', resourceScheme.rfind('.') - 1);
     if (secondLastDotPos != std::string::npos) {
@@ -120,10 +122,10 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 @end
 
 @implementation CustomUIDelegate {
-  deskgui::Webview* webview_;
+  deskgui::Webview::Impl* webview_;
 }
 
-- (instancetype)initWithWebview:(deskgui::Webview*)webview {
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview {
   self = [super init];
   if (self) {
     webview_ = webview;
@@ -143,7 +145,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
   // Emit the window requested event
   event::WebviewWindowRequested event(url.absoluteString.UTF8String);
-  webview_->emit(event);
+  webview_->events().emit(event);
 
   // If the event was cancelled, don't load the URL
   if (event.isCancelled()) {
@@ -159,14 +161,69 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
 @end
 
-@implementation DragAndDropWebview
+@implementation CustomWebview
 
-- (instancetype)initWithFrame:(NSRect)frame configuration:(WKWebViewConfiguration*)configuration {
+- (instancetype)initWithFrame:(NSRect)frame
+                configuration:(WKWebViewConfiguration*)configuration
+            enableDragAndDrop:(BOOL)enableDragAndDrop {
   self = [super initWithFrame:frame configuration:configuration];
-  if (self) {
+  if (self && enableDragAndDrop) {
     [self registerForDraggedTypes:@[ NSPasteboardTypeFileURL ]];
   }
   return self;
+}
+
+- (BOOL)acceptsFirstResponder {
+  return YES;
+}
+
+- (BOOL)becomeFirstResponder {
+  return [super becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder {
+  return [super resignFirstResponder];
+}
+
+- (BOOL)performKeyEquivalent:(NSEvent*)event {
+  const auto isCommandDown = [event] {
+    const auto modifierFlags = [event modifierFlags];
+
+    if (@available(macOS 10.12, *)) {
+      return (modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask)
+             == NSEventModifierFlagCommand;
+    }
+
+    return (modifierFlags & NSDeviceIndependentModifierFlagsMask) == NSCommandKeyMask;
+  }();
+
+  if (isCommandDown) {
+    auto sendAction = [&](SEL actionSelector) -> BOOL {
+      return [NSApp sendAction:actionSelector to:[[self window] firstResponder] from:self];
+    };
+
+    NSString* characters = [event charactersIgnoringModifiers];
+    if ([characters isEqualToString:@"x"]) {
+      return sendAction(@selector(cut:));
+    }
+    if ([characters isEqualToString:@"c"]) {
+      return sendAction(@selector(copy:));
+    }
+    if ([characters isEqualToString:@"v"]) {
+      return sendAction(@selector(paste:));
+    }
+    if ([characters isEqualToString:@"a"]) {
+      return sendAction(@selector(selectAll:));
+    }
+    if ([characters isEqualToString:@"z"]) {
+      return sendAction(@selector(undo:));
+    }
+    if ([characters isEqualToString:@"Z"]) {
+      return sendAction(@selector(redo:));
+    }
+  }
+
+  return [super performKeyEquivalent:event];
 }
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
