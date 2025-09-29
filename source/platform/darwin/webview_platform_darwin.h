@@ -38,14 +38,22 @@
 @end
 
 /**
- * CustomWebview extends WKWebView to add drag and drop functionality.
+ * CustomWebview extends WKWebView to add enhanced functionality.
  * It handles:
- * - File drag and drop events
+ * - File drag and drop events (when enabled)
  * - Custom drag operations
  * - JavaScript event dispatching for drops
+ * - Keyboard shortcuts (copy, paste, select all, etc.)
+ * - First responder status
  */
-@interface DragAndDropWebview : WKWebView <NSDraggingDestination>
-- (instancetype)initWithFrame:(NSRect)frame configuration:(WKWebViewConfiguration*)configuration;
+@interface CustomWebview : WKWebView <NSDraggingDestination>
+- (instancetype)initWithFrame:(NSRect)frame
+                configuration:(WKWebViewConfiguration*)configuration
+            enableDragAndDrop:(BOOL)enableDragAndDrop;
+- (BOOL)acceptsFirstResponder;
+- (BOOL)becomeFirstResponder;
+- (BOOL)resignFirstResponder;
+- (BOOL)performKeyEquivalent:(NSEvent*)event;
 @end
 
 namespace deskgui {

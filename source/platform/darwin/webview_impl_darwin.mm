@@ -26,8 +26,8 @@ Impl::Impl(const std::string& name, AppHandler* appHandler, void* window,
   platform_->preferences = [[WKPreferences alloc] init];
   platform_->configuration.preferences = platform_->preferences;
 
-  platform_->navigationDelegate =
-      [[CustomNavigationDelegate alloc] initWithWebview:this resources:&resources_];
+  platform_->navigationDelegate = [[CustomNavigationDelegate alloc] initWithWebview:this
+                                                                          resources:&resources_];
   [platform_->controller addScriptMessageHandler:platform_->navigationDelegate
                                             name:kScriptMessageCallback];
   [platform_->configuration setURLSchemeHandler:platform_->navigationDelegate
@@ -49,13 +49,9 @@ Impl::Impl(const std::string& name, AppHandler* appHandler, void* window,
 
   const auto nativeDragAndDrop
       = options.getOption<bool>(WebviewOptions::kActivateNativeDragAndDrop);
-  if (nativeDragAndDrop) {
-    platform_->webview = [[DragAndDropWebview alloc] initWithFrame:CGRectZero
-                                                     configuration:platform_->configuration];
-  } else {
-    platform_->webview =
-        [[WKWebView alloc] initWithFrame:CGRectZero configuration:platform_->configuration];
-  }
+  platform_->webview = [[CustomWebview alloc] initWithFrame:CGRectZero
+                                              configuration:platform_->configuration
+                                          enableDragAndDrop:nativeDragAndDrop];
   [platform_->webview setNavigationDelegate:platform_->navigationDelegate];
 
   // Set up UI delegate
@@ -120,8 +116,8 @@ void Impl::navigate(const std::string& url) {
 }
 
 void Impl::loadFile(const std::string& path) {
-  NSURL* nsurl =
-      [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()] isDirectory:FALSE];
+  NSURL* nsurl = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]
+                            isDirectory:FALSE];
   [platform_->webview loadFileURL:nsurl
           allowingReadAccessToURL:[nsurl URLByDeletingLastPathComponent]];
 }

@@ -5,8 +5,9 @@
  * MIT License
  */
 
-#include "js/drop.h"
 #include "webview_platform_darwin.h"
+
+#include "js/drop.h"
 
 using namespace deskgui;
 
@@ -33,8 +34,9 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
       didReceiveScriptMessage:(nonnull WKScriptMessage*)message {
   if ([[message name] isEqualToString:kScriptMessageCallback]) {
     NSDictionary* dict = (NSDictionary*)message.body;
-    NSData* data =
-        [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
+    NSData* data = [NSJSONSerialization dataWithJSONObject:dict
+                                                   options:NSJSONWritingPrettyPrinted
+                                                     error:nil];
     NSString* jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     webview_->onMessage([jsonString UTF8String]);
   }
@@ -159,14 +161,69 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
 @end
 
-@implementation DragAndDropWebview
+@implementation CustomWebview
 
-- (instancetype)initWithFrame:(NSRect)frame configuration:(WKWebViewConfiguration*)configuration {
+- (instancetype)initWithFrame:(NSRect)frame
+                configuration:(WKWebViewConfiguration*)configuration
+            enableDragAndDrop:(BOOL)enableDragAndDrop {
   self = [super initWithFrame:frame configuration:configuration];
-  if (self) {
+  if (self && enableDragAndDrop) {
     [self registerForDraggedTypes:@[ NSPasteboardTypeFileURL ]];
   }
   return self;
+}
+
+- (BOOL)acceptsFirstResponder {
+  return YES;
+}
+
+- (BOOL)becomeFirstResponder {
+  return [super becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder {
+  return [super resignFirstResponder];
+}
+
+- (BOOL)performKeyEquivalent:(NSEvent*)event {
+  const auto isCommandDown = [event] {
+    const auto modifierFlags = [event modifierFlags];
+
+    if (@available(macOS 10.12, *)) {
+      return (modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask)
+             == NSEventModifierFlagCommand;
+    }
+
+    return (modifierFlags & NSDeviceIndependentModifierFlagsMask) == NSCommandKeyMask;
+  }();
+
+  if (isCommandDown) {
+    auto sendAction = [&](SEL actionSelector) -> BOOL {
+      return [NSApp sendAction:actionSelector to:[[self window] firstResponder] from:self];
+    };
+
+    NSString* characters = [event charactersIgnoringModifiers];
+    if ([characters isEqualToString:@"x"]) {
+      return sendAction(@selector(cut:));
+    }
+    if ([characters isEqualToString:@"c"]) {
+      return sendAction(@selector(copy:));
+    }
+    if ([characters isEqualToString:@"v"]) {
+      return sendAction(@selector(paste:));
+    }
+    if ([characters isEqualToString:@"a"]) {
+      return sendAction(@selector(selectAll:));
+    }
+    if ([characters isEqualToString:@"z"]) {
+      return sendAction(@selector(undo:));
+    }
+    if ([characters isEqualToString:@"Z"]) {
+      return sendAction(@selector(redo:));
+    }
+  }
+
+  return [super performKeyEquivalent:event];
 }
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
