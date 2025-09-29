@@ -5,8 +5,16 @@
  * MIT License
  */
 
-#include "app_handler_linux.h"
+#pragma once
+
+#include <gtk/gtk.h>
+
+#include "interfaces/app_impl.h"
 
 namespace deskgui {
-  AppHandler::AppHandler(const std::string& name) : name_(name) {}
+  class App::Impl::Platform {
+  public:
+    Platform() = default;
+    ~Platform() = default;
+  };
 }  // namespace deskgui

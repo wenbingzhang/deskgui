@@ -5,18 +5,20 @@
  * MIT License
  */
 
-#include "webview_windows_impl.h"
-
 #include <rapidjson/document.h>
 
 #include "js/drop.h"
 #include "utils/strings.h"
+#include "webview_platform_win32.h"
+
 
 using namespace deskgui;
 using namespace deskgui::utils;
 
-bool Webview::Impl::createWebviewInstance(const std::string& appName, HWND hWnd,
-                                          const WebviewOptions& options) {
+using Platform = Webview::Impl::Platform;
+
+bool Platform::createWebviewInstance(std::string_view appName, HWND hWnd,
+                                     const WebviewOptions& options) {
   using namespace Microsoft::WRL;
 
   HRESULT hr = OleInitialize(nullptr);
@@ -53,7 +55,7 @@ bool Webview::Impl::createWebviewInstance(const std::string& appName, HWND hWnd,
 
   // Register custom scheme
   auto customSchemeRegistration
-      = Microsoft::WRL::Make<CoreWebView2CustomSchemeRegistration>(Webview::kWOrigin.c_str());
+      = Microsoft::WRL::Make<CoreWebView2CustomSchemeRegistration>(Webview::Impl::kWOrigin.c_str());
   customSchemeRegistration->put_TreatAsSecure(true);
   customSchemeRegistration->put_HasAuthorityComponent(true);
   std::array<ICoreWebView2CustomSchemeRegistration*, 1> registrations
@@ -113,8 +115,8 @@ bool Webview::Impl::createWebviewInstance(const std::string& appName, HWND hWnd,
   return true;
 }
 
-HRESULT Webview::Impl::onCreateEnvironmentCompleted(ICoreWebView2Environment* environment,
-                                                    HWND hWnd, std::atomic_flag& flag) {
+HRESULT Platform::onCreateEnvironmentCompleted(ICoreWebView2Environment* environment, HWND hWnd,
+                                               std::atomic_flag& flag) {
   environment->CreateCoreWebView2Controller(
       hWnd,
       Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
@@ -127,14 +129,14 @@ HRESULT Webview::Impl::onCreateEnvironmentCompleted(ICoreWebView2Environment* en
   return S_OK;
 }
 
-void Webview::Impl::onCreateCoreWebView2ControllerCompleted(ICoreWebView2Controller* controller) {
+void Platform::onCreateCoreWebView2ControllerCompleted(ICoreWebView2Controller* controller) {
   if (controller) {
     webviewController = controller;
     webviewController->get_CoreWebView2(&webview);
   }
 }
 
-bool Webview::Impl::handleDragAndDrop(ICoreWebView2WebMessageReceivedEventArgs* event) {
+bool Platform::handleDragAndDrop(ICoreWebView2WebMessageReceivedEventArgs* event) {
   wil::com_ptr<ICoreWebView2WebMessageReceivedEventArgs2> args2
       = wil::com_ptr<ICoreWebView2WebMessageReceivedEventArgs>(event)
             .query<ICoreWebView2WebMessageReceivedEventArgs2>();

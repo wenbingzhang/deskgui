@@ -15,10 +15,10 @@
 namespace deskgui {
   /**
    * @brief Class representing the options for a webview.
-   * 
-   * Note: In Windows, all webviews should share the same WebviewOptions. 
+   *
+   * Note: In Windows, all webviews should share the same WebviewOptions.
    * https://github.com/MicrosoftEdge/WebView2Feedback/issues/2323#issuecomment-1088248488
-   * 
+   *
    */
   class WebviewOptions {
   public:
@@ -26,7 +26,7 @@ namespace deskgui {
 
     /**
      * @brief Set an option with the specified key and value.
-     * 
+     *
      * @param key The key of the option.
      * @param value The value of the option.
      */
@@ -34,7 +34,7 @@ namespace deskgui {
 
     /**
      * @brief Check if an option with the specified key exists.
-     * 
+     *
      * @param key The key of the option.
      * @return true if the option exists, false otherwise.
      */
@@ -44,18 +44,17 @@ namespace deskgui {
 
     /**
      * @brief Get the value of an option with the specified key.
-     * 
+     *
      * @tparam T The type of the option value.
      * @param key The key of the option.
      * @return The value of the option.
      * @throws std::runtime_error if the option value is not of the requested type.
      */
     template <typename T> T getOption(const std::string& key) const {
-      auto it = options.find(key);
-      if (it != options.end()) {
+      if (auto it = options.find(key); it != options.end()) {
         try {
           return std::get<T>(it->second);
-        } catch (const std::bad_variant_access& e) {
+        } catch ([[maybe_unused]] const std::bad_variant_access& e) {
           throw std::runtime_error("Option value is not of the requested type");
         }
       }

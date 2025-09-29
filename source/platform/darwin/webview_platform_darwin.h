@@ -11,8 +11,7 @@
 
 #include <vector>
 
-#include "deskgui/webview.h"
-
+#include "interfaces/webview_impl.h"
 
 /**
  * CustomNavigationDelegate handles all WebKit navigation and message events.
@@ -25,7 +24,7 @@
 @interface CustomNavigationDelegate
     : NSObject <WKNavigationDelegate, WKScriptMessageHandler, WKURLSchemeHandler>
 @property(nonatomic) BOOL contextMenuEnabled;
-- (instancetype)initWithWebview:(deskgui::Webview*)webview
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview
                       resources:(std::vector<deskgui::Resource>*)resources;
 @end
 
@@ -35,7 +34,7 @@
  * - Web view delegate events
  */
 @interface CustomUIDelegate : NSObject <WKUIDelegate>
-- (instancetype)initWithWebview:(deskgui::Webview*)webview;
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview;
 @end
 
 /**
@@ -58,7 +57,7 @@ namespace deskgui {
    * Implementation details for the Webview class.
    * Contains the native WebKit components used by the Webview.
    */
-  struct Webview::Impl {
+  struct Webview::Impl::Platform {
     WKWebView* webview = nullptr;                     ///< The WebKit web view instance
     WKUserContentController* controller = nullptr;    ///< Controller for user content and scripts
     CustomUIDelegate* uiDelegate = nullptr;           ///< UI delegate for the webview

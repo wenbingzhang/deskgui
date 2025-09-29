@@ -10,7 +10,7 @@ using namespace deskgui;
 TEST_CASE("Webview tests") {
   App app;
   auto window = app.createWindow("window");
-  auto webview = window->createWebview("webview");
+  auto webview = window->createWebview("Webview");
 
   SECTION("Navigate to url") {
     std::string url = "http://localhost/";
@@ -27,4 +27,5 @@ TEST_CASE("Webview tests") {
     app.run();
     CHECK("file://" + file + "/" == webview->getUrl());
   }
+
 }

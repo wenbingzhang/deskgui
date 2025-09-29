@@ -19,13 +19,16 @@
 #include <optional>
 #include <utility>
 
-#include "deskgui/webview.h"
+#include "interfaces/webview_impl.h"
 
 namespace deskgui {
 
-  struct Webview::Impl {
-    bool createWebviewInstance(const std::string& appName, HWND hWnd,
-                               const WebviewOptions& options);
+  class Webview::Impl::Platform {
+  public:
+    Platform() = default;
+    ~Platform() = default;
+
+    bool createWebviewInstance(std::string_view appName, HWND hWnd, const WebviewOptions& options);
 
     HRESULT onCreateEnvironmentCompleted(ICoreWebView2Environment* environment, HWND hWnd,
                                          std::atomic_flag& flag);

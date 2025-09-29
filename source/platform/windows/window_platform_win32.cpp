@@ -9,20 +9,24 @@
 #include <system_error>
 #include <utility>
 
-#include "window_windows_impl.h"
+#include "interfaces/app_impl.h"
+#include "window_platform_win32.h"
 
 using namespace deskgui;
 
-float Window::Impl::computeDpiScale(HWND hwnd) {
-  float dpi = static_cast<float>(GetDpiForWindow(hwnd));
+using Platform = Window::Impl::Platform;
+
+float Platform::computeDpiScale(HWND hwnd) {
+  auto dpi = static_cast<float>(GetDpiForWindow(hwnd));
   return dpi / USER_DEFAULT_SCREEN_DPI;
 }
 
-bool Window::Impl::processWindowMessage(Window *window, HWND hwnd, UINT uMsg, WPARAM wParam,
-                                        LPARAM lParam) {
+bool Platform::processWindowMessage(Window::Impl *window, HWND hwnd, UINT uMsg, WPARAM wParam,
+                                    LPARAM lParam) {
   switch (uMsg) {
     case WM_SHOWWINDOW: {
-      window->emit<event::WindowShow>(static_cast<bool>(wParam));
+      event::WindowShow showEvent(static_cast<bool>(wParam));
+      window->events().emit(showEvent);
     } break;
     case WM_GETMINMAXINFO: {
       auto *info = reinterpret_cast<MINMAXINFO *>(lParam);
@@ -36,15 +40,17 @@ bool Window::Impl::processWindowMessage(Window *window, HWND hwnd, UINT uMsg, WP
       return true;
     } break;
     case WM_EXITSIZEMOVE: {
-      window->emit<event::WindowResize>(window->getSize(PixelsType::kPhysical));
+      event::WindowResize resizeEvent(window->getSize(PixelsType::kPhysical));
+      window->events().emit(resizeEvent);
     } break;
     case WM_SIZE: {
-      window->pImpl_->throttle.trigger([window]() {
-        window->emit<event::WindowResize>(window->getSize(PixelsType::kPhysical));
+      window->platform()->throttle.trigger([window]() {
+        event::WindowResize resizeEvent(window->getSize(PixelsType::kPhysical));
+        window->events().emit(resizeEvent);
       });
     } break;
     case WM_DPICHANGED: {
-      window->setMonitorScaleFactor(window->pImpl_->computeDpiScale(hwnd));
+      window->setMonitorScaleFactor(window->platform()->computeDpiScale(hwnd));
 
       RECT *suggestedRect = reinterpret_cast<RECT *>(lParam);
 
@@ -56,27 +62,27 @@ bool Window::Impl::processWindowMessage(Window *window, HWND hwnd, UINT uMsg, WP
       auto hdc = reinterpret_cast<HDC>(wParam);
       RECT rc;
       GetClientRect(hwnd, &rc);
-      FillRect(hdc, &rc, CreateSolidBrush(window->pImpl_->backgroundColor_));
+      FillRect(hdc, &rc, CreateSolidBrush(window->platform()->backgroundColor));
       return true;
-    } break;
+    };
   }
   return false;
 }
 
-LRESULT CALLBACK Window::Impl::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  Window *window;
+LRESULT CALLBACK Platform::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  Window::Impl *window;
   if (uMsg == WM_CREATE) {
     CREATESTRUCT *windowCreate = reinterpret_cast<CREATESTRUCT *>(lParam);
-    window = reinterpret_cast<Window *>(windowCreate->lpCreateParams);
+    window = reinterpret_cast<Window::Impl *>(windowCreate->lpCreateParams);
     SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window);
   } else {
-    window = reinterpret_cast<Window *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    window = reinterpret_cast<Window::Impl *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
   }
 
   if (window) {
     if (uMsg == WM_CLOSE) {
       event::WindowClose closeEvent{};
-      window->emit(closeEvent);
+      window->events().emit(closeEvent);
       if (closeEvent.isCancelled()) {
         return 0;
       }
@@ -89,16 +95,16 @@ LRESULT CALLBACK Window::Impl::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, L
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-LRESULT CALLBACK Window::Impl::subclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-                                            [[maybe_unused]] UINT_PTR uIdSubclass,
-                                            DWORD_PTR dwRefData) {
-  if (auto *window = reinterpret_cast<class Window *>(dwRefData); window != nullptr) {
+LRESULT CALLBACK Platform::subclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+                                        [[maybe_unused]] UINT_PTR uIdSubclass,
+                                        DWORD_PTR dwRefData) {
+  if (auto *window = reinterpret_cast<class Window::Impl *>(dwRefData); window != nullptr) {
     if (processWindowMessage(window, hwnd, uMsg, wParam, lParam)) return 0;
   }
   return DefSubclassProc(hwnd, uMsg, wParam, lParam);
 }
 
-void Window::Impl::registerWindowClass() {
+void Platform::registerWindowClass() {
   if (!hInstance) {
     hInstance = GetModuleHandleW(nullptr);
 

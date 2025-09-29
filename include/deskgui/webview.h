@@ -13,10 +13,6 @@
 #include <deskgui/types.h>
 #include <deskgui/webview_options.h>
 
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
 namespace deskgui {
   class Window;
 
@@ -29,11 +25,10 @@ namespace deskgui {
    * files, loading embedded resources and executing scripts. Additionally, it allows for
    * interaction between JavaScript and native code by adding and removing callback functions.
    */
-  class Webview : public EventBus {
-    struct Impl;
-
-  private:
+  class Webview {
+    class Impl;
     friend class Window;
+
     /**
      * @brief Constructs a Webview object.
      *
@@ -45,24 +40,15 @@ namespace deskgui {
      *               - On MacOS, it should be of type NSWindow.
      *               - On Linux, it should be of type GtkWindow.
      */
-    explicit Webview(const std::string& name, AppHandler* appHandler, void* window,
-                     const WebviewOptions& options);
+    Webview(const std::string& name, AppHandler* appHandler, void* window,
+            const WebviewOptions& options);
+
   public:
     /**
      * @brief Destroys the Webview object.
      */
     ~Webview();
 
-    const std::string& getName() const;
-
-    /**
-     * Constants defining the protocol, host, and origin URL of the URL scheme
-     * used in the webview to serve custom resources.
-     */
-    static constexpr auto kProtocol = "webview";
-    inline static const std::string kOrigin = "webview://localhost/";
-    inline static const std::wstring kWOrigin = L"webview://localhost/";
-    
     // Settings
 
     /**
@@ -161,7 +147,7 @@ namespace deskgui {
      *
      * @return The current URL.
      */
-    [[nodiscard]] const std::string getUrl();
+    [[nodiscard]] std::string getUrl();
 
     // Functionality
 
@@ -205,30 +191,49 @@ namespace deskgui {
     void postMessage(const std::string& message);
 
     /**
-     * @brief A callback function to handle incoming messages from the webview.
-     *
-     * @param message A message received from the webview.
-     */
-    void onMessage(const std::string& message);
-
-    /**
      * @brief Resizes the web view to the specified size.
      *
      * @param size The new size of the web view.
      */
     void resize(const ViewSize& size);
 
+    /**
+     * @brief Connects a listener to a webview event type.
+     *
+     * Allows registering callbacks_ for webview-specific events. See the WebviewEvents
+     * namespace for available event types that can be listened to.
+     *
+     * Example:
+     * @code{.cpp}
+     * webview->connect<WebviewSourceChanged>([](const WebviewSourceChanged& event) {
+     *   // Handle webview content change
+     * });
+     * @endcode
+     *
+     * @tparam EventType The type of webview event to listen for
+     * @tparam Callable The type of the callable object (lambda, function, etc.)
+     * @param listener The callable object to be called when the event is emitted
+     * @return A unique ID that can be used to disconnect the listener later
+     */
+    template <class EventType, typename Callable>
+    [[maybe_unused]] UniqueId connect(Callable&& listener) {
+      return events_->connect<EventType>(std::forward<Callable>(listener));
+    }
+
+    /**
+     * @brief Disconnects a listener
+     *
+     * @tparam EventType The type of event the listener was connected to.
+     * @param id The unique ID returned when the listener was connected.
+     */
+    template <typename EventType> void disconnect(UniqueId id) {
+      events_->disconnect<EventType>(id);
+    }
+
   private:
-    // Pointer to the implementation
-    std::unique_ptr<Impl> pImpl_{nullptr};
+    std::shared_ptr<Impl> impl_{nullptr};
 
-    // App delegate
-    AppHandler* appHandler_{nullptr};
-
-    std::unordered_map<std::string, MessageCallback> callbacks_;
-    Resources resources_;
-
-    std::string name_;
+    EventBus* events_;
   };
 
 }  // namespace deskgui

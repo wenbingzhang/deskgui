@@ -16,10 +16,6 @@ static const std::string kWebviewName = "webview";
 
 using namespace deskgui::event;
 
-struct MessageDeserialization {
-  void process(const WebviewOnMessage& event) { std::cout << event.message << std::endl; }
-};
-
 int main() {
   deskgui::App app(kApplicationName);
 
@@ -51,8 +47,9 @@ int main() {
 
   // We can listen to all types of messages (including attached callbacks) by connecting to the
   // WebviewOnMessage event.
-  MessageDeserialization msgCallback;
-  webview->connect<WebviewOnMessage>(&msgCallback, &MessageDeserialization::process);
+  webview->connect<WebviewOnMessage>([](const WebviewOnMessage& event) {
+    std::cout << event.message << std::endl;
+  });
 
   std::filesystem::path assetsPath;
 

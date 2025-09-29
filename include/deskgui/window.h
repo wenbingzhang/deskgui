@@ -12,16 +12,8 @@
 #include <deskgui/types.h>
 #include <deskgui/webview.h>
 
-#include <atomic>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <thread>
-
 namespace deskgui {
   class App;
-
   /**
    * @class Window
    * @brief Represents a native window with functionality for managing window properties and
@@ -31,10 +23,9 @@ namespace deskgui {
    * It provides methods to set and retrieve window properties such as size, title, position, and
    * decoration. Additionally, it supports event handling for window resize and show/hide events.
    */
-  class Window : public EventBus {
-    struct Impl;
-
+  class Window {
   private:
+    class Impl;
     friend class App;
     /**
      * @brief Constructs a Window object.
@@ -58,18 +49,10 @@ namespace deskgui {
     ~Window();
 
     /**
-     * @brief Get the name associated with this Window.
-     *
-     *
-     * @return A constant reference to the name of the window.
-     */
-    inline const std::string& getName() const { return name_; }
-
-    /**
      * Create a new Webview with the specified name and position it with the given rect.
      *
      * @param name The name of the Webview.
-     * @return A pointer to the created Webview.
+     * @return A weak pointer to the created Webview.
      */
     Webview* createWebview(const std::string& name, const WebviewOptions& options = {});
 
@@ -93,7 +76,13 @@ namespace deskgui {
      */
     Webview* getWebview(const std::string& name) const;
 
-    // Window Style
+    /**
+     * @brief Get the name associated with this Window.
+     *
+     *
+     * @return A constant reference to the name of the window.
+     */
+    [[nodiscard]] std::string getName() const;
 
     /**
      * @brief Sets the title of the window.
@@ -243,7 +232,8 @@ namespace deskgui {
     /**
      * Enables or disables the window.
      *
-     * @param state The state to set the window to. `true` to enable the window, `false` to disable it.
+     * @param state The state to set the window to. `true` to enable the window, `false` to disable
+     * it.
      */
     void enable(bool state);
 
@@ -266,13 +256,13 @@ namespace deskgui {
      *         - On MacOS, it should be of type NSWindow.
      *         - On Linux, it should be of type GtkWindow.
      */
-    [[nodiscard]] void* getNativeWindow();
+    [[nodiscard]] void* getNativeWindow() const;
 
     /**
      * @brief Gets the content view handle where the webview is attached.
      *
-     * This method is primarily used on macOS to return an NSView, which is the view 
-     * where the web view content is rendered. For other platforms, it returns the same 
+     * This method is primarily used on macOS to return an NSView, which is the view
+     * where the web view content is rendered. For other platforms, it returns the same
      * handle as `getNativeWindow`.
      *
      * @return The content view handle.
@@ -280,7 +270,7 @@ namespace deskgui {
      *         - On macOS, it returns a handle of type NSView.
      *         - On Linux, it returns a handle of type GtkWindow.
      */
-    [[nodiscard]] void* getContentView();
+    [[nodiscard]] void* getContentView() const;
 
     /**
      * @brief Sets the monitor scale factor.
@@ -303,28 +293,44 @@ namespace deskgui {
      */
     float getMonitorScaleFactor() const;
 
+    /**
+     * @brief Connects a listener to a window event type.
+     *
+     * Example:
+     * @code{.cpp}
+     * window->connect<WindowResize>([](const WindowResize& event) {
+     *   // Handle window resize
+     *   auto newSize = event.size;
+     * });
+     * @endcode
+     *
+     * @tparam EventType The type of window event to listen for
+     * @tparam Callable The type of the callable object (lambda, function, etc.)
+     * @param listener The callable object to be called when the event is emitted
+     * @return A unique ID that can be used to disconnect the listener later
+     */
+    template <class EventType, typename Callable>
+    [[maybe_unused]] UniqueId connect(Callable&& listener) {
+      return events_->connect<EventType>(std::forward<Callable>(listener));
+    }
+
+    /**
+     * @brief Disconnects a listener from a window event type.
+     *
+     * Removes a previously registered event listener using the ID returned from connect().
+     * After disconnecting, the listener will no longer receive events of that type.
+     *
+     * @tparam EventType The type of window event the listener was connected to
+     * @param id The unique ID returned when the listener was connected
+     */
+    template <typename EventType> void disconnect(UniqueId id) {
+      events_->disconnect<EventType>(id);
+    }
+
   private:
-    // Window name
-    std::string name_;
+    std::shared_ptr<Impl> impl_{nullptr};
 
-    // Pointer to the implementation
-    std::unique_ptr<Impl> pImpl_{nullptr};
-
-    // App delegate
-    AppHandler* appHandler_{nullptr};
-
-    // Collection of webviews
-    std::unordered_map<std::string, std::unique_ptr<Webview>> webviews_;
-    mutable std::mutex webviewsMutex_;
-
-    // Window sizes (physical size)
-    ViewSize minSize_;
-    ViewSize maxSize_;
-    bool minSizeDefined_{false};
-    bool maxSizeDefined_{false};
-    bool isExternalWindow_{false};
-
-    float monitorScaleFactor_ = 1.f;
+    EventBus* events_;
   };
 
 }  // namespace deskgui

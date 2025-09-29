@@ -38,9 +38,9 @@ file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include
 
 # Sources
 set(sources
-    "${CMAKE_CURRENT_SOURCE_DIR}/source/app_common.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/source/window_common.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/source/webview_common.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source/app.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source/window.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source/webview.cpp"
     )
     
 string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)

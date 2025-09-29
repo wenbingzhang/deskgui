@@ -6,7 +6,7 @@
  */
 
 #include "js/drop.h"
-#include "webview_darwin_impl.h"
+#include "webview_platform_darwin.h"
 
 using namespace deskgui;
 
@@ -15,11 +15,11 @@ NSString* const deskgui::kSchemeUri = [NSString stringWithUTF8String:Webview::kP
 NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
 @implementation CustomNavigationDelegate {
-  deskgui::Webview* webview_;
+  deskgui::Webview::Impl* webview_;
   std::vector<deskgui::Resource>* resources_;
 }
 
-- (instancetype)initWithWebview:(deskgui::Webview*)webview
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview
                       resources:(std::vector<deskgui::Resource>*)resources {
   self = [super init];
   if (self) {
@@ -50,7 +50,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
                  @"window.addEventListener('contextmenu', (event) => event.preventDefault());"
               completionHandler:nil];
   }
-  webview_->emit(event::WebviewContentLoaded{true});
+  webview_->events().emit(event::WebviewContentLoaded{true});
 }
 
 - (void)webView:(WKWebView*)webView didCommitNavigation:(WKNavigation*)navigation {
@@ -58,7 +58,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
     NSString* urlString = [webView.URL absoluteString];
     const char* urlCString = [urlString UTF8String];
     std::string url = urlCString ? urlCString : "";
-    webview_->emit(event::WebviewSourceChanged{url});
+    webview_->events().emit(event::WebviewSourceChanged{url});
   }
 }
 
@@ -69,7 +69,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
   std::string url = [urlString UTF8String];
 
   event::WebviewNavigationStarting event{url};
-  webview_->emit(event);
+  webview_->events().emit(event);
 
   if (event.isCancelled()) {
     decisionHandler(WKNavigationActionPolicyCancel);
@@ -120,10 +120,10 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 @end
 
 @implementation CustomUIDelegate {
-  deskgui::Webview* webview_;
+  deskgui::Webview::Impl* webview_;
 }
 
-- (instancetype)initWithWebview:(deskgui::Webview*)webview {
+- (instancetype)initWithWebview:(deskgui::Webview::Impl*)webview {
   self = [super init];
   if (self) {
     webview_ = webview;
@@ -143,7 +143,7 @@ NSString* const deskgui::kScriptMessageCallback = @"deskgui_callback";
 
   // Emit the window requested event
   event::WebviewWindowRequested event(url.absoluteString.UTF8String);
-  webview_->emit(event);
+  webview_->events().emit(event);
 
   // If the event was cancelled, don't load the URL
   if (event.isCancelled()) {
