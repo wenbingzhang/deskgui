@@ -11,6 +11,7 @@
 #include <deskgui/webview.h>
 
 #include <unordered_map>
+#include <vector>
 
 namespace deskgui {
 
@@ -55,6 +56,9 @@ namespace deskgui {
     // Functionality
     void addCallback(const std::string& key, MessageCallback callback);
     void removeCallback(const std::string& key);
+    void bind(const std::string& key, std::function<std::string(const std::string&)> func);
+    void unbind(const std::string& key);
+    void processPendingResponses();
     void postMessage(const std::string& message);
     void injectScript(const std::string& script);
     void executeScript(const std::string& script);
@@ -63,10 +67,14 @@ namespace deskgui {
     [[nodiscard]] inline AppHandler* application() const { return appHandler_; }
     [[nodiscard]] inline EventBus& events() { return events_; }
 
+    [[nodiscard]] inline std::vector<std::string>& getPendingResponses() { return pending_responses_; }
+
   private:
     std::unique_ptr<Platform> platform_{nullptr};
     std::string name_;
     std::unordered_map<std::string, MessageCallback> callbacks_;
+    std::unordered_map<std::string, std::function<std::string(const std::string&)>> bind_functions_;
+    std::vector<std::string> pending_responses_;
     AppHandler* appHandler_{nullptr};
     Resources resources_;
     EventBus events_;

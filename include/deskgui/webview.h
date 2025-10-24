@@ -192,6 +192,34 @@ namespace deskgui {
     void removeCallback(const std::string& key);
 
     /**
+     * @brief Binds a C++ function that can return values to JavaScript.
+     *
+     * The bound function is exposed as a global JavaScript function that returns a Promise.
+     * When the JavaScript function is called, it will return the value from the C++ function.
+     *
+     * @param key The name (key) of the function.
+     * @param func The function to be bound that returns a string value.
+     */
+    void bind(const std::string& key, std::function<std::string(const std::string&)> func);
+
+    /**
+     * @brief Unbinds a previously bound C++ function.
+     *
+     * Removes the JavaScript function and cleans up the associated C++ callback.
+     *
+     * @param key The name (key) of the function to unbind.
+     */
+    void unbind(const std::string& key);
+
+    /**
+     * @brief Processes pending responses from bind function calls.
+     *
+     * This method should be called regularly to process any pending responses
+     * from bind function calls and send them back to JavaScript.
+     */
+    void processPendingResponses();
+
+    /**
      * @brief Sends a message to the webview.
      *
      * @param message The message to send.

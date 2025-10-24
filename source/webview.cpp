@@ -49,6 +49,80 @@ void Webview::removeCallback(const std::string& key) {
   executeScript(script);
 }
 
+void Webview::Impl::bind(const std::string& key, std::function<std::string(const std::string&)> func) {
+  bind_functions_.try_emplace(key, func);
+}
+
+void Webview::Impl::unbind(const std::string& key) {
+  bind_functions_.erase(key);
+}
+
+void Webview::Impl::processPendingResponses() {
+  if (!pending_responses_.empty()) {
+    for (const auto& response : pending_responses_) {
+      executeScript(response);
+    }
+    pending_responses_.clear();
+  }
+}
+
+void Webview::bind(const std::string& key, std::function<std::string(const std::string&)> func) {
+  // Create JavaScript function that returns a Promise with secure ID generation
+  auto script = "window['" + key + "'] = function(payload) { return new Promise((resolve, reject) => {" +
+                R"(
+                    function generateId() {
+                      const crypto = window.crypto || window.msCrypto;
+                      const bytes = new Uint8Array(16);
+                      crypto.getRandomValues(bytes);
+                      return Array.from(bytes)
+                        .map(n => n.toString(16).padStart(2, '0'))
+                        .join('');
+                    }
+                    const requestId = generateId();
+
+                    window.webview.postMessage({
+                              type: 'bind',
+                              key: ')" + key + R"(',
+                              payload: payload,
+                              requestId: requestId
+                            });
+
+                    // Store the promise resolve/reject functions
+                    window._bindPromises = window._bindPromises || {};
+                    window._bindPromises[requestId] = { resolve, reject };
+                });
+                })";
+
+  utils::dispatch<&Impl::bind>(impl_, key, func);
+  injectScript(script);
+  executeScript(script);
+}
+
+void Webview::unbind(const std::string& key) {
+  // Create script to delete the JavaScript function and clean up any pending promises
+  auto script = "delete window['" + key + "'];" +
+                "if (window._bindPromises) { " +
+                "  for (let requestId in window._bindPromises) { " +
+                "    window._bindPromises[requestId].reject('Function unbound'); " +
+                "    delete window._bindPromises[requestId]; " +
+                "  } " +
+                "}";
+
+  utils::dispatch<&Impl::unbind>(impl_, key);
+  injectScript(script);
+  executeScript(script);
+}
+
+void Webview::processPendingResponses() {
+  auto& responses = impl_->getPendingResponses();
+  if (!responses.empty()) {
+    for (const auto& response : responses) {
+      executeScript(response);
+    }
+    responses.clear();
+  }
+}
+
 void Webview::postMessage(const std::string& message) {
   executeScript("window.webview.onMessage('" + message + "');");
 }
@@ -57,7 +131,47 @@ void Webview::Impl::onMessage(const std::string& message) {
   rapidjson::Document doc;
   doc.Parse(message.c_str());
   if (!doc.HasParseError() && doc.IsObject()) {
-    if (doc.HasMember("key") && doc.HasMember("payload")) {
+    // Handle bind type messages (for functions that return values)
+    if (doc.HasMember("type") && doc["type"].IsString() && std::string(doc["type"].GetString()) == "bind") {
+      if (doc.HasMember("key") && doc.HasMember("requestId")) {
+        const auto& key = doc["key"];
+        const auto& requestId = doc["requestId"];
+        if (key.IsString() && requestId.IsString()) {
+          std::string keyStr = key.GetString();
+          std::string requestIdStr = requestId.GetString();
+
+          auto bind_func = bind_functions_.find(keyStr);
+          if (bind_func != bind_functions_.end()) {
+            std::string payload;
+            if (doc.HasMember("payload")) {
+              const auto& payloadVal = doc["payload"];
+              rapidjson::StringBuffer buffer;
+              rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+              payloadVal.Accept(writer);
+              payload = buffer.GetString();
+            }
+
+            try {
+              std::string result = bind_func->second(payload);
+              // Send the result back to JavaScript
+              std::string responseScript = "if (window._bindPromises && window._bindPromises['" + requestIdStr + "']) { window._bindPromises['" + requestIdStr + "'].resolve(" + result + "); delete window._bindPromises['" + requestIdStr + "']; }";
+              pending_responses_.push_back(responseScript);
+
+              // Process responses immediately to ensure they reach JavaScript
+              processPendingResponses();
+            } catch (const std::exception& e) {
+              std::string errorScript = "if (window._bindPromises && window._bindPromises['" + requestIdStr + "']) { window._bindPromises['" + requestIdStr + "'].reject('" + std::string(e.what()) + "'); delete window._bindPromises['" + requestIdStr + "']; }";
+              pending_responses_.push_back(errorScript);
+
+              // Process error responses immediately
+              processPendingResponses();
+            }
+          }
+        }
+      }
+    }
+    // Handle regular callback messages
+    else if (doc.HasMember("key") && doc.HasMember("payload")) {
       const auto& key = doc["key"];
       if (key.IsString()) {
         std::string keyStr = key.GetString();

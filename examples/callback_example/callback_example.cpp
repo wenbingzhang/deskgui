@@ -29,7 +29,7 @@ int main() {
   auto webview = window->createWebview(kWebviewName);
   webview->enableContextMenu(true);
   webview->enableDevTools(true);
-  
+
   window->connect<WindowResize>(
       [&webview](const WindowResize& event) { webview->resize(event.size); });
 
@@ -45,11 +45,20 @@ int main() {
     webview->postMessage("Counter reset received on the C++ side! <3");
   });
 
+  webview->bind("get_timestamp", [](const std::string& payload) -> std::string {
+    std::cout << "[C++] get_timestamp called with payload: " << payload << std::endl;
+    auto now = std::chrono::system_clock::now();
+    auto timestamp
+        = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    std::string result = std::to_string(timestamp);
+    std::cout << "[C++] get_timestamp returning: " << result << std::endl;
+    return result;
+  });
+
   // We can listen to all types of messages (including attached callbacks) by connecting to the
   // WebviewOnMessage event.
-  webview->connect<WebviewOnMessage>([](const WebviewOnMessage& event) {
-    std::cout << event.message << std::endl;
-  });
+  webview->connect<WebviewOnMessage>(
+      [](const WebviewOnMessage& event) { std::cout << event.message << std::endl; });
 
   std::filesystem::path assetsPath;
 

@@ -10,6 +10,13 @@
   <div id="content">
     <h1 id="counter">You have pressed the spacebar <span class="hits">0</span> times.</h1>
     <a onclick="resetCounter()" class="restart">Restart</a>
+
+    <div id="timestamp-container" style="margin-top: 20px; font-size: 14px; color: #666;">
+      Last timestamp: <span id="timestamp">Not available</span>
+      <button onclick="fetchTimestamp()" style="margin-left: 10px; padding: 5px 10px;">
+        Get Current Timestamp
+      </button>
+    </div>
   </div>
   <script src="main.js"></script>
 </body>

@@ -30,3 +30,39 @@ const resetCounter = () => {
     window.counter_reset(hits);
   }
 };
+
+// 手动获取时间戳的函数
+const fetchTimestamp = () => {
+  if (window.get_timestamp) {
+    // 显示加载状态
+    const timestampElement = document.getElementById('timestamp');
+    if (timestampElement) {
+      timestampElement.textContent = 'Loading...';
+    }
+
+    window.get_timestamp()
+      .then(timestamp => {
+        console.log('Manual timestamp fetch:', timestamp);
+
+        // 在页面上显示时间戳
+        if (timestampElement) {
+          const date = new Date(parseInt(timestamp));
+          timestampElement.textContent = date.toLocaleString();
+        }
+      })
+      .catch(error => {
+        console.error('Error getting timestamp:', error);
+
+        // 显示错误信息
+        if (timestampElement) {
+          timestampElement.textContent = 'Error: ' + error.message;
+        }
+      });
+  } else {
+    console.error('get_timestamp function not available');
+    const timestampElement = document.getElementById('timestamp');
+    if (timestampElement) {
+      timestampElement.textContent = 'Function not available';
+    }
+  }
+};
