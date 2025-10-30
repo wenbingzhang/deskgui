@@ -200,7 +200,7 @@ namespace deskgui {
      * @param key The name (key) of the function.
      * @param func The function to be bound that returns a string value.
      */
-    void bind(const std::string& key, std::function<std::string(const std::string&)> func);
+    void bind(const std::string& key, BindCallback func);
 
     /**
      * @brief Unbinds a previously bound C++ function.

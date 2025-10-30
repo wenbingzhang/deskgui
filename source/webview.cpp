@@ -49,7 +49,7 @@ void Webview::removeCallback(const std::string& key) {
   executeScript(script);
 }
 
-void Webview::Impl::bind(const std::string& key, std::function<std::string(const std::string&)> func) {
+void Webview::Impl::bind(const std::string& key, BindCallback func) {
   bind_functions_.try_emplace(key, func);
 }
 
@@ -66,7 +66,7 @@ void Webview::Impl::processPendingResponses() {
   }
 }
 
-void Webview::bind(const std::string& key, std::function<std::string(const std::string&)> func) {
+void Webview::bind(const std::string& key, BindCallback func) {
   // Create JavaScript function that returns a Promise with secure ID generation
   auto script = "window['" + key + "'] = function(payload) { return new Promise((resolve, reject) => {" +
                 R"(

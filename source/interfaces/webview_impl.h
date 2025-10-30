@@ -56,7 +56,7 @@ namespace deskgui {
     // Functionality
     void addCallback(const std::string& key, MessageCallback callback);
     void removeCallback(const std::string& key);
-    void bind(const std::string& key, std::function<std::string(const std::string&)> func);
+    void bind(const std::string& key, BindCallback func);
     void unbind(const std::string& key);
     void processPendingResponses();
     void postMessage(const std::string& message);
@@ -73,7 +73,7 @@ namespace deskgui {
     std::unique_ptr<Platform> platform_{nullptr};
     std::string name_;
     std::unordered_map<std::string, MessageCallback> callbacks_;
-    std::unordered_map<std::string, std::function<std::string(const std::string&)>> bind_functions_;
+    std::unordered_map<std::string, BindCallback> bind_functions_;
     std::vector<std::string> pending_responses_;
     AppHandler* appHandler_{nullptr};
     Resources resources_;

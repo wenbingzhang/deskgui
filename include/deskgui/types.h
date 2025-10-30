@@ -37,7 +37,10 @@ namespace deskgui {
   static const ViewRect kDefaultWindowRect = {0, 0, 600, 600};
 
   // Callback function type for receiving messages.
-  using MessageCallback = std::function<void(std::string_view)>;
+  using MessageCallback = std::function<void(const std::string&)>;
+
+  // Function type for bind callbacks that return string values.
+  using BindCallback = std::function<std::string(const std::string&)>;
 
   using UniqueId = size_t;
 
